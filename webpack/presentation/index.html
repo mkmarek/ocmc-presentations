@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+
+    <title>reveal.js</title>
+
+    <link rel="stylesheet" href="dist/reset.css" />
+    <link rel="stylesheet" href="dist/reveal.css" />
+    <link rel="stylesheet" href="dist/theme/black.css" />
+
+    <!-- Theme used for syntax highlighted code -->
+    <link rel="stylesheet" href="plugin/highlight/monokai.css" />
+  </head>
+  <body>
+    <div class="reveal">
+      <div class="slides">
+        <section>
+          <section>
+            <h1>Webpack</h1>
+            <img style="width: 40%" src="/media/webpack-intro.png" />
+          </section>
+          <section>
+            <h3>Brief history of modules</h3>
+            <ul>
+              <li>Script tags</li>
+              <li>IIFE</li>
+              <li>CommonJS (NodeJs require(''))</li>
+              <li>AMD - Asynchronous Module Definition (RequireJS)</li>
+              <li>Browserify</li>
+              <li>UMD (Seriously? Another one?)</li>
+            </ul>
+          </section>
+          <section>
+              <h4>Webpack facilitates conversion from modules to static assets</h4>
+              <img src="/media/webpack.png" />
+          </section>
+        </section>
+        <section>
+          <section>
+            <h2>Why to use webpack?</h2>
+          </section>
+          <section>
+            <h2>HTTP/1.x</h2>
+            No multiplexing, therefore no concurrency
+            <a href="https://hpbn.co/http1x/#domain-sharding">
+              https://hpbn.co/http1x/#domain-sharding
+            </a>
+          </section>
+          <section>
+            <h2>Network latency overhead</h2>
+            <img src="/media/82966133085de5c9aed3229838166dc5.svg" />
+            <a href="https://hpbn.co/optimizing-for-mobile-networks/#anticipate-network-latency-overhead">
+              https://hpbn.co/optimizing-for-mobile-networks/#anticipate-network-latency-overhead
+            </a>
+          </section>
+          <section>
+              <h2>Is it useless in HTTP/2 and 5G world?</h2>
+            </section>
+            <section>
+              <p>HTTP/2 doesn't multiplex to infinity</p>
+              <img src="/media/settings-frame.png" />
+              <a href="https://stackoverflow.com/questions/37556283/what-is-the-value-of-using-webpack-with-http-2">
+                https://stackoverflow.com/questions/37556283/what-is-the-value-of-using-webpack-with-http-2
+              </a>
+              <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-6.5">
+                https://datatracker.ietf.org/doc/html/rfc7540#section-6.5
+              </a>
+            </section>
+             <section>
+              <h2>Request waterfalls</h2>
+              <img src="/media/pongour-falls.jpg" />
+              <small>(mitigates a lot of advantages of HTTP/2)</small>
+            </section>
+            <section>
+              <img src="/media/bundling-scale.png" />
+            </section>
+            <section>
+              <h1>Experiences</h1>
+              <ul>
+                <li><a href="https://blog.khanacademy.org/forgo-js-packaging-not-so-fast/">https://blog.khanacademy.org/forgo-js-packaging-not-so-fast/</a></li>
+                <li><a href="https://medium.com/@asyncmax/the-right-way-to-bundle-your-assets-for-faster-sites-over-http-2-437c37efe3ff">https://medium.com/@asyncmax/the-right-way-to-bundle-your-assets-for-faster-sites-over-http-2-437c37efe3ff</a></li>
+              </ul>
+          </section>
+          </section>
+        </section>
+        <section>
+          <section>
+            <h1>Webpack walkthrough</h1>
+          </section>
+          <section>
+            <h4>Let's init new project</h4>
+            <pre><code>npx webpack init</code></pre>
+          </section>
+          <section>
+            <img src="/media/init-webpack.PNG" />
+          </section>
+          <section>
+            <h4>Some basic config elements</h4>
+            <pre class="javascript"><code>const config = {
+    entry: "./src/index.ts",
+    output: {
+      path: path.resolve(__dirname, "dist"),
+    },
+    plugins: [ ... ],
+    module: {
+      rules: [ ... ],
+    },
+    resolve: {
+      extensions: [".tsx", ".ts", ".js"],
+    },
+  };</code></pre>
+          </section>
+          <section>
+            <h4>What's a plugin?</h4>
+            <pre><code>npx webpack plugin ./plugins --template=default</code></pre>
+          </section>
+          <section>
+             <h4>How a basic plugin looks</h4>
+            <pre class="javascript"><code>class TestPlugin {
+  apply(compiler) {
+    compiler.hooks.done.tap('TestPlugin', (
+      stats
+    ) => {
+      console.log(
+        'I am a test plugin and I run when stuff\'s done');
+    });
+  }
+}</code></pre>
+          <a href="https://webpack.js.org/api/compilation-hooks/">https://webpack.js.org/api/compilation-hooks/</a>
+          </section>
+          <section>
+            <h4>What's a loader?</h4>
+            <pre><code>npx webpack loader ./my-loader --template=default</code></pre>
+          </section>
+          <section>
+             <h4>How a basic loader looks</h4>
+            <pre class="javascript"><code>function loader(source) {
+	const { loaders, resource, request, version, webpack } = this;
+	return `
+	/**
+	 * test-loader
+	 *
+	 * Resource Location: ${resource}
+	 * Loaders chained to module: ${JSON.stringify(loaders)}
+	 * Loader API Version: ${version}
+	 * Is this in "webpack mode": ${webpack}
+	 * This is the users request for the module: ${request}
+	 */
+	${source}`;
+}
+</code></pre>
+          <a href="https://webpack.js.org/contribute/writing-a-loader/">https://webpack.js.org/contribute/writing-a-loader/</a>
+          </section>
+          <section>
+            <h4>Chunks</h4>
+             <pre class="javascript"><code>async function foo() { 
+
+    // Dont confuse it with: "import module1 from './module1';"
+    const module1 = await import('./module1');
+    const module2 = await import('./module2');
+
+    console.log(module1.default())
+    console.log(module2.default())
+}
+
+foo();
+</code></pre>
+          <img src="/media/chonkers.png" />
+          </section>
+          <section>
+          <h4>Webpack will automatically split chunks based on these conditions:</h4>
+<ul>
+  <li>New chunk can be shared OR modules are from the node_modules folder</li>
+  <li>New chunk would be bigger than 20kb (before min+gz)</li>
+  <li>Maximum number of parallel requests when loading chunks on demand would be lower or equal to 30</li>
+  <li>Maximum number of parallel requests at initial page load would be lower or equal to 30</li>
+</ul>
+          </section>
+          <section>
+          <h4>For those who like to stay in control of their chunks</h4>
+          <pre class="javascript"><code>module.exports = {
+  //...
+  optimization: {
+    splitChunks: {
+      chunks: 'async',
+      minSize: 20000,
+      minRemainingSize: 0,
+      minChunks: 1,
+      maxAsyncRequests: 30,
+      maxInitialRequests: 30,
+      enforceSizeThreshold: 50000,
+      cacheGroups: {
+        defaultVendors: {
+          test: /[\\/]node_modules[\\/]/,
+          priority: -10,
+          reuseExistingChunk: true,
+        },
+        default: {
+          minChunks: 2,
+          priority: -20,
+          reuseExistingChunk: true,
+        },
+      },
+    },
+  },
+};</code></pre>
+          </section>
+        </section>
+        <section>
+          <section>
+            <h3>Few words on build speeds</h3>
+          </section>
+          <section>
+            <h4>Decide the minimal set of actions for:</h4>
+            <ul>
+              <li>Local development</li>
+              <li>PR checks</li>
+              <li>Staging build</li>
+              <li>Production build</li>
+            </ul>
+          </section>
+          <section>
+            <h4>Local development:</h4>
+            <ul>
+              <li>No linting</li>
+              <li>No type checking</li>
+              <li>No minification</li>
+              <li>Just pure build</li>
+            </ul>
+          </section>
+          <section>
+            <h4>PR checks:</h4>
+            <ul>
+              <li>Lint</li>
+              <li>Type check</li>
+              <li>Test build without minification</li>
+            </ul>
+          </section>
+          <section>
+            <h4>Builds:</h4>
+            <ul>
+              <li>No lint</li>
+              <li>No type checking</li>
+            </ul>
+          </section>
+        </section>
+        <section>
+          <img style="width: 100%" src="/media/the-end.gif" />
+        </section>
+      </div>
+    </div>
+
+    <script src="dist/reveal.js"></script>
+    <script src="plugin/notes/notes.js"></script>
+    <script src="plugin/markdown/markdown.js"></script>
+    <script src="plugin/highlight/highlight.js"></script>
+    <script>
+      // More info about initialization & config:
+      // - https://revealjs.com/initialization/
+      // - https://revealjs.com/config/
+      Reveal.initialize({
+        hash: true,
+
+        // Learn about plugins: https://revealjs.com/plugins/
+        plugins: [RevealMarkdown, RevealHighlight, RevealNotes],
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,397 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>reveal.js</title>
+
+		<link rel="stylesheet" href="dist/reset.css">
+		<link rel="stylesheet" href="dist/reveal.css">
+		<link rel="stylesheet" href="dist/theme/black.css">
+
+		<!-- Theme used for syntax highlighted code -->
+		<link rel="stylesheet" href="plugin/highlight/monokai.css">
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+				<section>
+					<section>
+						<h1>GraphQL</h1>
+						<small>An introduction</small>
+					</section>
+				</section>
+				<section>
+					<section>
+						<h1>The problem</h1>
+					</section>
+					<section>
+						<img src="/media/shoe-shop.png" />
+					</section>
+					<section>
+						Number of requests: 1 + N
+						<pre><code data-trim>
+/api/products
+/api/product/[1..N]/comments
+
+</code></pre>
+					</section>
+					<section>
+						<img style="max-height: 30%;max-width: 50%" src="/media/shoe-shop-2.png" />
+					</section>
+					<section>
+						Number of requests: 2 + N + M
+						<pre><code data-trim>
+/api/products?group=top
+/api/product/[1..N]/comments
+
+/api/products?group=latest
+/api/product/[1..M]/comments
+
+</code></pre>
+					</section>
+					<section>
+						<img style="max-height: 30%;max-width: 50%" src="/media/shoe-shop-3.png" />
+					</section>
+					<section>
+						Number of requests: 2 + 2 * (N + M)
+						<pre><code data-trim>
+/api/products?group=top
+/api/product/[1..N]/comments
+/api/product/[1..N]/variants
+
+/api/products?group=latest
+/api/product/[1..M]/comments
+/api/product/[1..M]/variants
+
+</code></pre>
+					</section>
+					<section>
+						<table>
+							<thead>
+								<tr>
+									<th>Products per group</th>
+									<th>Total requests</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr>
+									<td>5</td>
+									<td>22</td>
+								</tr>
+								<tr>
+									<td>10</td>
+									<td>42</td>
+								</tr>
+								<tr>
+									<td>20</td>
+									<td>82</td>
+								</tr>
+							</tbody>
+						</table>
+					</section>
+					<section>
+						<h4>Why do you fragment api data that much?</h4>
+						<p>Just let /api/products?group=??? return everything</p>
+					</section>
+					<section>
+						<h4>Underfetching and overfetching</h4>
+					</section>
+				</section>
+				<section>
+					<section>
+						<h1>The solution</h1>
+					</section>
+					<section>
+						<h2>Lot of solutions:</h2>
+						<ul>
+							<li>GraphQL</li>
+							<li>Falcor</li>
+							<li>Standardized metadata in query strings (OData, TMForum specs)</li>
+							<li>https://github.com/deeprjs/deepr (quite interesting)</li>
+							<li>... probably more</li>
+						</ul>
+					</section>
+					<section>
+						<h3>Just let the web specify what they want. And ideally let them fetch it in a single request, Or split it.. whatever they want</h3>
+					</section>
+					<section>
+						<h1>The graphql way</h1>
+						<pre><code data-trim>
+{
+  top: products(group: "top") {
+    name
+    price
+    comments(take: 1) {
+      user {
+        imageUrl
+      }
+      content
+    }
+    variants(take: 3) {
+      color
+    }
+  }
+}
+</code></pre>
+					</section>
+					<section>
+						<h1>The graphql way</h1>
+						<pre><code data-trim>
+{
+ "data": {
+    "top": [
+     {
+       "name": "Product 1",
+       "price": 100,
+       "comments": [
+         {
+           "user": {
+             "imageUrl": "https://some.url.com/image.jpg"
+           },
+           "content": "This is a comment"
+         }
+       ],
+       "variants": [
+         {
+           "color": "Red"
+         }
+       ]
+     }
+   ]
+ }
+}
+</code></pre>
+					</section>
+					<section>
+						<img style="width: 80%" src="/media/request.png" />
+					</section>
+					<section>
+						<h2>GraphQL language</h2>
+						<ul>
+							<li>Query definition language</li>
+							<li>Schema definition language</li>
+						</ul>
+					</section>
+					<section>
+						<h2>Basic type with a field</h4>
+						<pre><code class="graphql" data-trim>
+type SomeType {
+  stuff String!
+}
+</code></pre>
+					</section>
+					<section>
+						<h2>Some types are special</h4>
+						<pre><code class="graphql" data-trim>
+type Query {
+  stuff String!
+}
+
+type Mutation {
+  stuff String!
+}
+
+type Subscription {
+  stuff String!
+}
+</code></pre>
+					</section>
+					<section>
+						<h2>Arrays work as well</h4>
+						<pre><code class="graphql" data-trim>
+type SomeType {
+  lotOfStuff [String!]!
+}
+</code></pre>
+					</section>
+					<section>
+						<h2>Some default scalar types</h4>
+						<ul>
+							<li>String</li>
+							<li>Int</li>
+							<li>Float</li>
+							<li>Boolean</li>
+							<li>ID</li>
+						</ul>
+					</section>
+					<section>
+						<h2>Missing a scalar? Make your own</h4>
+						<pre><code class="graphql" data-trim>
+scalar Date
+</code></pre>
+					</section>
+					<section>
+						<h2>Enums work too</h4>
+						<pre><code class="graphql" data-trim>
+enum Episode {
+  NEWHOPE
+  EMPIRE
+  JEDI
+}
+</code></pre>
+					</section>
+					<section>
+						<h2>Interfaces</h4>
+						<pre><code class="graphql" data-trim>
+interface Toy {
+  id: ID!
+  name: String!
+}
+
+type ToyCar implements Toy {
+  id: ID!
+  name: String!
+  isRemoteControlled: Boolean
+}
+</code></pre>
+					</section>
+					<section>
+						<h2>Unions</h4>
+						<pre><code class="graphql" data-trim>
+union Things = ToyCar | Airplane | Pizza
+</code></pre>
+					</section>
+					<section>
+						<h2>Directives</h4>
+						<pre><code class="graphql" data-trim>
+directive @deprecated(
+  reason: String = "No longer supported"
+) on FIELD_DEFINITION | ENUM_VALUE
+
+type ExampleType {
+  newField: String
+  oldField: String @deprecated(reason: "Use `newField`.")
+}
+</code></pre>
+					</section>
+					<section>
+						<h2>Input types for input</h4>
+						<pre><code class="graphql" data-trim>
+input ReviewInput {
+  stars: Int!
+  commentary: String
+}
+
+// ---------------- NOT PART OF SCHEMA ---------- //
+mutation CreateReview($review: ReviewInput!) {
+  createReview(review: $review) {
+    stars
+    commentary
+  }
+}
+</code></pre>
+					</section>
+					<section>
+						<h2>Queries are better explained by example</h2>
+						<a href="https://swapi-graphql.netlify.app/">https://swapi-graphql.netlify.app/</a>
+					</section>
+				</section>
+				<section>
+					<section>
+						<h1>Let's build Joe's shop</h1>
+					</section>
+					<section>
+						<img src="/media/apollo-graphql-1.svg" />
+					</section>
+					<section>
+						<img src="/media/apollo-wdid.PNG" />
+					</section>
+					<section>
+						<h3>Install main dependencies</h3>
+						<pre><code class="bash" data-trim>
+							npm init --yes
+							npm install apollo-server graphql
+						</code></pre>
+					</section>
+					<section>
+						<h3>Code the server</h3>
+						<pre><code class="javascript" data-trim>
+							const { ApolloServer, gql } = require("apollo-server");
+
+							const typeDefs = gql``; // TODO: Think of a schema
+
+							const resolvers = { /* TODO: some resolvers here */ };
+
+							const server = new ApolloServer({ typeDefs, resolvers });
+
+							server.listen().then(({ url }) => {
+							  console.log(`🚀  Server ready at ${url}`);
+							});
+						</code></pre>
+					</section>
+					<section>
+						<img src="/media/schema.png" />
+					</section>
+					<section>
+						<img src="/media/resolvers.png" />
+					</section>
+					<section>
+						<h3>For a test we can send a curl to our local server</h3>
+						<pre><code class="javascript" data-trim>
+							curl --request POST \
+								--header 'content-type: application/json' \
+								--url http://localhost:4000/ \
+								--data '{"query":"..."}'
+						</code></pre>
+					</section>
+					<section>
+						<h3>Or try it with apollo studio</h3>
+						<img src="/media/apollo-studio.PNG" />
+					</section>
+					<section>
+						<h3>Apollo Client for frontend</h3>
+					</section>
+				</section>
+				<section>
+					<section>
+						<h3>More approaches to building GraphQL</h3>
+					</section>
+					<section>
+						<h4>AWS Appsync</h4>
+						<img src="/media/aws-appsync.png" />
+					</section>
+					<section>
+						<h4>Apollo Federation</h4>
+						<img src="/media/apollo-federation.png" />
+						<a href="https://www.apollographql.com/docs/federation/">https://www.apollographql.com/docs/federation/</a>
+					</section>
+					<section>
+						<h4>Not a fan of javascript?</h4>
+						<ul>
+							<li><a href="https://github.com/webonyx/graphql-php">https://github.com/webonyx/graphql-php</a></li>
+							<li><a href="https://github.com/graphql-python/graphql-core">https://github.com/graphql-python/graphql-core</a></li>
+							<li><a href="https://github.com/graphql-java/graphql-java">https://github.com/graphql-java/graphql-java</a></li>
+							<li><a href="https://github.com/graphql-go/graphql">https://github.com/graphql-go/graphql</a></li>
+							<li><a href="https://github.com/graphql-dotnet/graphql-dotnet">https://github.com/graphql-dotnet/graphql-dotnet</a></li>
+						</ul>
+					</section>
+				</section>
+				<section>
+					<h4>Need more?</h4>
+					<a href="https://github.com/chentsulin/awesome-graphql#lib">https://github.com/chentsulin/awesome-graphql</a>
+				</section>
+				<section>
+					<img style="width: 100%" src="/media/the-end.gif" />
+				</section>
+			</div>
+		</div>
+
+		<script src="dist/reveal.js"></script>
+		<script src="plugin/notes/notes.js"></script>
+		<script src="plugin/markdown/markdown.js"></script>
+		<script src="plugin/highlight/highlight.js"></script>
+		<script>
+			// More info about initialization & config:
+			// - https://revealjs.com/initialization/
+			// - https://revealjs.com/config/
+			Reveal.initialize({
+				hash: true,
+
+				// Learn about plugins: https://revealjs.com/plugins/
+				plugins: [ RevealMarkdown, RevealHighlight, RevealNotes ]
+			});
+		</script>
+	</body>
+</html>
